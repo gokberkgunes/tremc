@@ -442,6 +442,7 @@ config.set('Colors', 'file_prio_high', 'fg:red,bg:default')
 config.set('Colors', 'file_prio_normal', 'fg:default,bg:default')
 config.set('Colors', 'file_prio_low', 'fg:yellow,bg:default')
 config.set('Colors', 'file_prio_off', 'fg:blue,bg:default')
+config.set('Colors', 'selected', 'bg:magenta,fg:white')
 
 
 class ColorManager:
@@ -2587,7 +2588,7 @@ class Interface:
     def draw_torrentlist_item(self, torrent, focused, compact, y, idx=-1):
         # the torrent name is also a progress bar
         selected = torrent['id'] in self.selected
-        self.draw_torrentlist_title(torrent, focused, self.torrent_title_width, y, idx)
+        self.draw_torrentlist_title(torrent, focused, self.torrent_title_width, y, idx, selected)
 
         if torrent['status'] == Transmission.STATUS_DOWNLOAD:
             self.draw_downloadrate(torrent, y, selected)
@@ -2621,7 +2622,7 @@ class Interface:
 
     def draw_uploadrate(self, torrent, ypos, selected):
         if selected:
-            tag = curses.A_REVERSE
+            tag = curses.color_pair(self.colors.ind('selected')) + curses.A_BOLD
         else:
             tag = curses.color_pair(self.colors.ind('upload_rate')) + curses.A_BOLD
         self.pad.move(ypos, self.width - self.rateUpload_width - 1)
@@ -2645,7 +2646,7 @@ class Interface:
                         scale_time(torrent['eta']).rjust(self.rateDownload_width),
                         curses.color_pair(self.colors.ind('eta+ratio')) + curses.A_BOLD)
 
-    def draw_torrentlist_title(self, torrent, focused, width, ypos, idx):
+    def draw_torrentlist_title(self, torrent, focused, width, ypos, idx, selected):
         if gconfig.torrent_numbers and idx >= 0:
             numwidth = len("%i" % (len(self.torrents) + 1))
             width = width - numwidth - 1
@@ -2682,7 +2683,9 @@ class Interface:
         size = '| ' + size
         title = ljust_columns(torrent['name'], width - len(size)) + size
 
-        if torrent['isIsolated']:
+        if selected:
+            color = curses.color_pair(self.colors.ind('selected'))
+        elif torrent['isIsolated']:
             color = curses.color_pair(self.colors.ind('title_error'))
         elif torrent['status'] == Transmission.STATUS_SEED or \
                 torrent['status'] == Transmission.STATUS_SEED_WAIT:
@@ -2703,7 +2706,7 @@ class Interface:
         tag_done = color
         if focused:
             tag += curses.A_BOLD
-            tag_done += curses.A_BOLD
+            tag_done += curses.A_BOLD + curses.A_REVERSE
 
         if gconfig.torrentname_is_progressbar:
             bar_width = int(float(width) * (float(percentDone) / 100))
